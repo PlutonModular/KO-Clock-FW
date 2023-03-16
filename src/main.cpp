@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "ResetFromBoot.h"
 
 int main(void)
 {  
@@ -15,5 +16,6 @@ int main(void)
         sleep_ms(100);
         gpio_put(PICO_DEFAULT_LED_PIN, 0);
         sleep_ms(100);
+        check_for_reset();
     }
 }
