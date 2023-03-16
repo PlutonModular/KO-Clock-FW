@@ -4,6 +4,8 @@
 int main(void)
 {  
     stdio_init_all();
+    sleep_ms(1000);
+    set_sys_clock_khz(210000, true);
     printf("\n\nHello World\n");
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
