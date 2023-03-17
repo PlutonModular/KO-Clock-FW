@@ -8,6 +8,17 @@
 #include "pico/stdlib.h"
 #include "ResetFromBoot.h"
 
+#include "chronos.h"
+
+repeating_timer_t *audioRateTimer;
+
+
+uint64_t frameLastMicros = 0;
+uint64_t frameStartMicros = 0;
+uint64_t deltaMicros = 0;
+
+Chronos chronos;
+
 int main(void)
 {  
     stdio_init_all();
@@ -16,12 +27,35 @@ int main(void)
     printf("\n\nHello World\n");
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+
+    chronos.Init();
+
+    //50kHz
+    add_repeating_timer_us(-20, audio_rate_callback, NULL, audioRateTimer);
+    
     while (true)
     {
-        gpio_put(PICO_DEFAULT_LED_PIN, 1);
-        sleep_ms(100);
-        gpio_put(PICO_DEFAULT_LED_PIN, 0);
-        sleep_ms(100);
+        //Do timing updates
+        frameLastMicros = frameStartMicros;
+        frameStartMicros = time_us_64();
+        deltaMicros = frameStartMicros - frameLastMicros;
+
+        //Run non-time-critical tasks
+        update();
+        //check if boot button is held, and enter boot mode if so
         check_for_reset();
     }
+}
+
+void update()
+{
+    //Blink LED to confirm not frozen
+    gpio_put(PICO_DEFAULT_LED_PIN, (frameStartMicros/1'000'000) % 1'000'000 < 500'000);
+}
+
+
+bool audio_rate_callback(struct repeating_timer *t)
+{
+    chronos.FastUpdate(20);
+    return true; //keep doing this.
 }
