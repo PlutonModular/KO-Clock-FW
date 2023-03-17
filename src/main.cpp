@@ -19,19 +19,34 @@ uint64_t deltaMicros = 0;
 
 Chronos chronos;
 
+
+void update()
+{
+    //Blink LED to confirm not frozen
+    gpio_put(PICO_DEFAULT_LED_PIN, ((frameStartMicros/1'000) % 1'000) < 500);
+}
+
+
+bool audio_rate_callback(struct repeating_timer *t)
+{
+    chronos.FastUpdate(20);
+    return true; //keep doing this.
+}
+
 int main(void)
-{  
+{
     stdio_init_all();
-    sleep_ms(1000);
-    set_sys_clock_khz(210000, true);
-    printf("\n\nHello World\n");
+    busy_wait_ms(200);
+    set_sys_clock_khz(280000, true);
+    //printf("\n\nHello World\n");
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
     chronos.Init();
 
-    //50kHz
-    add_repeating_timer_us(-20, audio_rate_callback, NULL, audioRateTimer);
+    audioRateTimer = new repeating_timer_t();
+    //25kHz
+    add_repeating_timer_us(-40, audio_rate_callback, NULL, audioRateTimer);
     
     while (true)
     {
@@ -45,17 +60,4 @@ int main(void)
         //check if boot button is held, and enter boot mode if so
         check_for_reset();
     }
-}
-
-void update()
-{
-    //Blink LED to confirm not frozen
-    gpio_put(PICO_DEFAULT_LED_PIN, (frameStartMicros/1'000'000) % 1'000'000 < 500'000);
-}
-
-
-bool audio_rate_callback(struct repeating_timer *t)
-{
-    chronos.FastUpdate(20);
-    return true; //keep doing this.
 }
