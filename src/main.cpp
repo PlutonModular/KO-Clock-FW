@@ -8,7 +8,7 @@
 #include "pico/stdlib.h"
 #include "ResetFromBoot.h"
 
-#include "chronos.h"
+#include "Chronos.h"
 
 repeating_timer_t *audioRateTimer;
 
