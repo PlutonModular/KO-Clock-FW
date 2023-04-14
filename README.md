@@ -17,7 +17,7 @@ See the releases page if you just want to update your device!
     - Install "Github Pull Requests and Issues" ([VSCode Extension](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-pull-request-github))
         - Don't forget to log in to your github account through the sidebar!
     - Install [Platformio](https://platformio.org/install/ide?install=vscode) ([VSCode Extension](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide))
-    - Install [WizIO-Pico](https://github.com/Wiz-IO/wizio-pico) in Platformio via [their instructions](https://github.com/Wiz-IO/wizio-pico#install-platform)
+    - ***Updated fork:***  Install [WizIO-Pico](https://github.com/OpenStickFoundation/wizio-pico) in Platformio via [their instructions](https://github.com/OpenStickFoundation/wizio-pico#install-platform)
 3. Clone this repo
     - Press ```Ctrl+shift+P``` in VS Code to pull up the command bar
     - Search for "Git: Clone"
