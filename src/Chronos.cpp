@@ -15,7 +15,7 @@ void Chronos::Init(IOHelper *ioh)
 bool Chronos::CalcGate(uint16_t divisor, uint16_t gateLen)
 {
     //TODO: change gate generation method to something with better hysterisis prevention
-    return (beatTime%divisor)*1024 > divisor*gateLen;
+    return (beatTime%divisor)*1024 < divisor*gateLen;
 }
 
 void Chronos::FastUpdate(uint32_t deltaMicros)
