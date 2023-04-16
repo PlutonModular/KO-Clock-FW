@@ -35,7 +35,9 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
         if(timeInThisGradation > microsPerTimeGradation)
         {
             timeInThisGradation -= microsPerTimeGradation;
-            beatTime++;
+            if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
+            else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
+            else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
         }
         //TEMPORARY FOR TESTING
         io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
