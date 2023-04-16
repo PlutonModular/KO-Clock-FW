@@ -18,8 +18,10 @@ void IOHelper::Init()
     //Clock and Reset Gate Ins
     gpio_init(GPIO_CLK);
     gpio_set_dir(GPIO_CLK, GPIO_IN);
+    gpio_set_pulls(GPIO_CLK, true, false);
     gpio_init(GPIO_RST);
     gpio_set_dir(GPIO_RST, GPIO_IN);
+    gpio_set_pulls(GPIO_RST, true, false);
     //Time Mult Switch
     gpio_init(GPIO_TMULT_A);
     gpio_set_dir(GPIO_TMULT_A, GPIO_IN);
@@ -224,8 +226,20 @@ void IOHelper::WriteOutputs(long dt)
             }
             case LEDState::FADE_FAST:
             {
-                int fadeBrightness = abs((LEDCycle%8'192) - 4'096); //0-8192
+                int fadeBrightness = abs((LEDCycle%8'192) - 4'096); //0-4096
                 thisLedState = (LEDCycle%16 > fadeBrightness/256);
+                break;
+            }
+            case LEDState::FADE_FASTER:
+            {
+                int fadeBrightness = abs((LEDCycle%2'048) - 1'024); //0-1024
+                thisLedState = (LEDCycle%16 > fadeBrightness/64);
+                break;
+            }
+            case LEDState::FADE_FASTEST:
+            {
+                int fadeBrightness = abs((LEDCycle%1'024) - 512); //0-512
+                thisLedState = (LEDCycle%16 > fadeBrightness/32);
                 break;
             }
         }

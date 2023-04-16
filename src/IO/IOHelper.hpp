@@ -36,6 +36,8 @@ enum LEDState
     FADE_SLOW,
     FADE_MED,
     FADE_FAST,
+    FADE_FASTER,
+    FADE_FASTEST,
 };
 
 /// @brief Gate LEDs arent here, they're hardwired to the gate outs
