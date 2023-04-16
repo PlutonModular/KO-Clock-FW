@@ -8,6 +8,10 @@
 
 void IOHelper::Init()
 {
+    //init heartbeat LED
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+
     //set up outputs
     for(int i = 0; i < NUM_GATE_OUTS; i++)
     {

@@ -36,26 +36,26 @@ void update()
 
 bool audio_rate_callback(struct repeating_timer *t)
 {
+    //--------Call Helper Classes' Audio Rate Updates--------
     io.ReadFastInputs(40);
     chronos.FastUpdate(40);
-    return true; //keep doing this.
+    return true; //keep doing this
 }
 
 int main(void)
 {
+    //--------Initialize Clock and StdIO--------
     stdio_init_all();
     busy_wait_ms(200);
     set_sys_clock_khz(280000, true);
-    //printf("\n\nHello World\n");
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    
+    //--------Initialize Helper Classes--------
+    io.Init();      //general I/O helper
+    chronos.Init(); //timing handler
 
-    io.Init();
-    chronos.Init();
-
+    //start audio-rate loop
     audioRateTimer = new repeating_timer_t();
-    //25kHz
-    add_repeating_timer_us(-40, audio_rate_callback, NULL, audioRateTimer);
+    add_repeating_timer_us(-40, audio_rate_callback, NULL, audioRateTimer); //25kHz (40uS interval)
             
     while (true)
     {
