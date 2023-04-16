@@ -59,15 +59,16 @@ int main(void)
             
     while (true)
     {
-        //Do timing updates
+        //--------Do Timing Variable Updates--------
         frameLastMicros = frameStartMicros;
         frameStartMicros = time_us_64();
         deltaMicros = frameStartMicros - frameLastMicros;
 
-        //Run non-time-critical tasks
+        //--------Run non-time-critical tasks--------
         update();
         //check if boot button is held, and enter boot mode if so
         check_for_reset();
+        //repeat this loop once every ms
         sleep_us(1000);
     }
 }
