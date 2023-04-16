@@ -6,16 +6,52 @@
 
 #include "Chronos.hpp"
 
-bool isPlayMode = false;
 
 void Chronos::Init(IOHelper *ioh)
 {
 	io = ioh;
 }
 
+bool Chronos::CalcGate(uint16_t divisor, uint16_t gateLen)
+{
+    //TODO: change gate generation method to something with better hysterisis prevention
+    return (beatTime%divisor)*1024 > divisor*gateLen;
+}
+
 void Chronos::FastUpdate(uint32_t deltaMicros)
 {
-	
+    if(isFollowMode)
+    {
+
+    }
+    else if(isPlayMode)
+    {
+        
+        if(io->ProcessResetFlag())
+        {
+            beatTime = 0;
+        }
+        timeInThisGradation += deltaMicros;
+        if(timeInThisGradation > microsPerTimeGradation)
+        {
+            timeInThisGradation -= microsPerTimeGradation;
+            beatTime++;
+        }
+        //TEMPORARY FOR TESTING
+        io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
+        io->OUT_GATES[1] = CalcGate(256, gateLen);
+        io->OUT_GATES[2] = CalcGate(128, gateLen);
+        io->OUT_GATES[3] = CalcGate(64 , gateLen);
+
+    }
+    else
+    {
+        beatTime = 0;
+        io->OUT_GATES[0] = false;
+        io->OUT_GATES[1] = false;
+        io->OUT_GATES[2] = false;
+        io->OUT_GATES[3] = false;
+    }
 }
 
 void Chronos::SetBPM(float exactBPM)
@@ -32,8 +68,8 @@ void Chronos::SetBPM(float exactBPM)
     printf("\tSPB: %f\n", b);
     b *= 1'000'000.0f;
     printf("\tmicros Per beat: %f\n", b);
-    b /= 64.0f; //convert from uS per 4th note to uS per 256th note
-    printf("\tmicros Per 256th: %f\n", b);
+    b /= 128.0f; //convert from uS per 4th note to uS per 512th note
+    printf("\tmicros Per 512th: %f\n", b);
 
     microsPerTimeGradation = uint32_t(floorf(b));
     printf("\tFINAL VALUE: %u\n", microsPerTimeGradation);
@@ -42,17 +78,24 @@ void Chronos::SetBPM(float exactBPM)
 
 void Chronos::SlowUpdate(uint32_t deltaMicros)
 {
-	if(io->FLAG_PLAY)
+	if(io->ProcessPlayFlag())
     {
-        io->FLAG_PLAY = false;
         isPlayMode = !isPlayMode;
-        SetBPM(60);
-        SetBPM(90);
-        SetBPM(99.99f);
-        SetBPM(120);
-        SetBPM(240);
-        SetBPM(1000);
     }
 
-    io->SetLEDState(PanelLED::PlayButton, isPlayMode?LEDState::FADE_FAST:LEDState::FADE_MED);
+    if(isFollowMode)
+    {
+        bool isClockLEDOn = beatTime % 64 < 32;
+        io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);
+    }
+    else if(isPlayMode)
+    {
+        bool isClockLEDOn = beatTime % 64 < 32;
+        io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);
+        io->SetLEDState(PanelLED::Clock, LEDState::SOLID_OFF);
+    }
+    else
+    {
+        io->SetLEDState(PanelLED::PlayButton, LEDState::FADE_SLOW);
+    }
 }

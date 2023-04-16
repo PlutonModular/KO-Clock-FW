@@ -64,6 +64,7 @@ class IOHelper
 
         /// @brief RESET, CLOCK, PLAY
         LEDState OUT_LEDS[NUM_LEDS];
+        
         /// @brief 1, 1/2, 1/4, 1/16, UD, UD/2
         bool OUT_GATES[NUM_GATE_OUTS];
         int16_t CV_UD           = 0;

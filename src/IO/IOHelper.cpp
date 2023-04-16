@@ -64,8 +64,8 @@ void IOHelper::Init()
 void IOHelper::ReadFastInputs(long dt)
 {
     //sets input flags, so they can be processed at any speed
-    bool TMP_CLK  = gpio_get(GPIO_CLK);
-    bool TMP_RST  = gpio_get(GPIO_RST);
+    bool TMP_CLK  = !gpio_get(GPIO_CLK); //these are active low
+    bool TMP_RST  = !gpio_get(GPIO_RST);
     if(!WAS_CLK  && TMP_CLK)  {     FLAG_CLK = true;    }
     if(!WAS_RST  && TMP_RST)  {     FLAG_RST = true;    }
     WAS_CLK  = TMP_CLK;
@@ -181,7 +181,10 @@ void IOHelper::WriteOutputs(long dt)
                 thisLedState = true;
                 break;
             case LEDState::SOLID_HALF:
-                thisLedState = (LEDCycle%16 > 14); //gives a better "50% brightness" physically
+                if(i == PanelLED::PlayButton)
+                    thisLedState = (LEDCycle%16 > 11); //gives a better "50% brightness" on the button LED
+                else
+                    thisLedState = (LEDCycle%16 > 14); //gives a better "50% brightness" on the rect LEDs
                 break;
             case LEDState::BLINK_SLOW:
                 thisLedState = (LEDCycle%8192 > 4096);

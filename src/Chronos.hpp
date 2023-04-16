@@ -15,13 +15,37 @@ class Chronos
 	private:
 		/// IO Helper Instance Pointer
 		IOHelper *io;
-		/// @brief The current musical time in 256th notes
-		uint32_t time = 0;
-		uint32_t last_time = 0;
+
+		/// @brief between 0 and 1024, used in CalcGate
+		int gateLen = 512;
+
+		/// @brief The current musical time in 512th notes
+		uint32_t beatTime = 0;
+		uint32_t last_beatTime = 0;
+
 		/// @brief The number of microseconds between incrementations of "time" variable; calculated in SetBPM
-		uint16_t microsPerTimeGradation = 1;
+		uint16_t microsPerTimeGradation = 0;
+		
+		/// @brief Microseconds in this time Gradation; when > microsPerTimeGradation, reset and increment beatTime
+		uint16_t timeInThisGradation = 0;
+
+		/// @brief Calculate whether a gate should be on, according to barTime's current value
+		/// @param divisor number of 512th notes the gate cycle should last
+		/// @param gateLen number between 0 and 1024 indicating the gate length
+		/// @return whether the gate should be on currently
+		bool CalcGate(uint16_t divisor, uint16_t gateLen);
 
 	public:
+		
+		// -------- VARIABLES --------
+
+		/// @brief True when clock should be running on its own; Overridden by isFollowMode
+		bool isPlayMode = false;
+		/// @brief True when clock should be synchronized to clock input; Higher priority than isPlayMode
+		bool isFollowMode = false;
+
+		// --------  METHODS  --------
+
 		/// @brief Initializes Chronos' state, must be called before updating
 		void Init(IOHelper *io);
 		/// @brief High Speed "Audio Rate" update function, for accurate timing requirements.

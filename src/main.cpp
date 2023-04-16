@@ -57,6 +57,7 @@ int main(void)
     //--------Initialize Helper Classes--------
     io.Init();      //general I/O helper
     chronos.Init(&io); //timing handler
+    chronos.SetBPM(165);
 
     //start audio-rate loop
     audioRateTimer = new repeating_timer_t();
