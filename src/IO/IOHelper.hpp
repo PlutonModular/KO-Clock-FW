@@ -32,6 +32,7 @@ enum LEDState
     BLINK_SLOW,
     BLINK_MED,
     BLINK_FAST,
+    FADE_SLOWEST,
     FADE_SLOW,
     FADE_MED,
     FADE_FAST,
@@ -59,7 +60,7 @@ class IOHelper
 
         int16_t ReadADC(uint8_t addr);
         int16_t GetCalibratedValue(uint16_t adcValue, uint16_t zero, uint16_t five);
-        
+
         /// @brief Does Hysterises on an input
         /// @param var variable we're writing to, used to compare to new value 
         /// @param newValue newly read value

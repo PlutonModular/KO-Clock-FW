@@ -204,16 +204,22 @@ void IOHelper::WriteOutputs(long dt)
             case LEDState::BLINK_FAST:
                 thisLedState = (LEDCycle%2048 > 1024);
                 break;
+            case LEDState::FADE_SLOWEST:
+            {
+                int fadeBrightness = abs((LEDCycle) - 32'768); //0-32'768 (no %, clamped by uint16 limit)
+                thisLedState = (LEDCycle%64 > fadeBrightness/512);
+                break;
+            }
             case LEDState::FADE_SLOW:
             {
-                int fadeBrightness = abs((LEDCycle%32'768) - 16'384); //0-8192
-                thisLedState = (LEDCycle%16 > fadeBrightness/1024);
+                int fadeBrightness = abs((LEDCycle%32'768) - 16'384); //0-16'384
+                thisLedState = (LEDCycle%64 > fadeBrightness/256);
                 break;
             }
             case LEDState::FADE_MED:
             {
                 int fadeBrightness = abs((LEDCycle%16'384) - 8'192); //0-8192
-                thisLedState = (LEDCycle%16 > fadeBrightness/512);
+                thisLedState = (LEDCycle%32 > fadeBrightness/256);
                 break;
             }
             case LEDState::FADE_FAST:
