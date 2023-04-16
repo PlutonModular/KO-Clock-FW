@@ -12,10 +12,10 @@ void Chronos::Init(IOHelper *ioh)
 	io = ioh;
 }
 
-bool Chronos::CalcGate(uint16_t divisor, uint16_t gateLen)
+bool Chronos::CalcGate(uint32_t thisBeatTime, uint16_t divisor, uint16_t gateLen)
 {
     //TODO: change gate generation method to something with better hysterisis prevention
-    return (beatTime%divisor)*1024 < divisor*gateLen;
+    return (thisBeatTime%divisor)*1024 < divisor*gateLen;
 }
 
 void Chronos::FastUpdate(uint32_t deltaMicros)
@@ -27,10 +27,6 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
     else if(isPlayMode)
     {
         
-        if(io->ProcessResetFlag())
-        {
-            beatTime = 0;
-        }
         timeInThisGradation += deltaMicros;
         if(timeInThisGradation > microsPerTimeGradation)
         {
@@ -39,7 +35,14 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
             else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
             else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
         }
-        //TEMPORARY FOR TESTING
+
+        //reset on the beat
+        if((CalcGate(64, gateLen) && !CalcGate(last_beatTime, 64, gateLen)) && io->ProcessResetFlag())
+        {
+            beatTime = 0;
+        }
+
+        //TEMPORARY IMPLEMENTATION FOR TESTING, PROBABLY VERY BAD
         io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
         io->OUT_GATES[1] = CalcGate(256, gateLen);
         io->OUT_GATES[2] = CalcGate(128, gateLen);
@@ -54,6 +57,7 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
         io->OUT_GATES[2] = false;
         io->OUT_GATES[3] = false;
     }
+    last_beatTime = beatTime;
 }
 
 void Chronos::SetBPM(float exactBPM)
@@ -93,6 +97,7 @@ void Chronos::SlowUpdate(uint32_t deltaMicros)
     {
         bool isClockLEDOn = beatTime % 64 < 32;
         io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);
+        io->SetLEDState(PanelLED::Reset, io->FLAG_RST?LEDState::FADE_FASTEST:LEDState::SOLID_OFF);
     }
     else if(isPlayMode)
     {
@@ -105,9 +110,11 @@ void Chronos::SlowUpdate(uint32_t deltaMicros)
         bool isClockLEDOn = beatTime % 64 < 32;
         io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);
         io->SetLEDState(PanelLED::Clock, LEDState::SOLID_OFF);
+        io->SetLEDState(PanelLED::Reset, io->FLAG_RST?LEDState::FADE_FASTEST:LEDState::SOLID_OFF);
     }
     else
     {
         io->SetLEDState(PanelLED::PlayButton, LEDState::FADE_SLOW);
+        io->SetLEDState(PanelLED::Reset, io->FLAG_RST?LEDState::FADE_FASTEST:LEDState::SOLID_OFF);
     }
 }

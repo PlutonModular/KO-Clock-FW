@@ -31,11 +31,19 @@ class Chronos
 		/// @brief Microseconds in this time Gradation; when > microsPerTimeGradation, reset and increment beatTime
 		uint16_t timeInThisGradation = 0;
 
-		/// @brief Calculate whether a gate should be on, according to barTime's current value
+
+		/// @brief Calculate whether a gate should be on
 		/// @param divisor number of 512th notes the gate cycle should last
 		/// @param gateLen number between 0 and 1024 indicating the gate length
-		/// @return whether the gate should be on currently
-		bool CalcGate(uint16_t divisor, uint16_t gateLen);
+		/// @return whether the gate should be on
+		bool CalcGate(uint32_t thisBeatTime, uint16_t divisor, uint16_t gateLen);
+		
+			/// @brief Calculate whether a gate should be on, according to barTime's current value
+			/// @param divisor number of 512th notes the gate cycle should last
+			/// @param gateLen number between 0 and 1024 indicating the gate length
+			/// @return whether the gate should be on currently
+			bool CalcGate(uint16_t divisor, uint16_t gateLen)
+			{ return CalcGate(beatTime, divisor, gateLen); }
 
 	public:
 		
