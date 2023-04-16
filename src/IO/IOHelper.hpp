@@ -20,13 +20,21 @@
 
 #define GPIO_ADC 26
 
+#define GPIO_TMULT_A 15
+#define GPIO_TMULT_B 10
+
 
 enum LEDState
 {
-    ON,
-    OFF,
-    SLOW_BLINK,
-    FAST_BLINK,
+    SOLID_ON,
+    SOLID_OFF,
+    SOLID_HALF,
+    BLINK_SLOW,
+    BLINK_MED,
+    BLINK_FAST,
+    FADE_SLOW,
+    FADE_MED,
+    FADE_FAST,
 };
 
 /// @brief Gate LEDs arent here, they're hardwired to the gate outs
@@ -44,10 +52,15 @@ class IOHelper
         const uint8_t LED_IO_PINS[NUM_LEDS] = {2, 3, 16};
         const uint8_t MUX_ADDR_PINS[3] = {11, 12, 13};
 
+        bool WAS_PLAY  = false;
+        bool WAS_CLK   = false;
+        bool WAS_RST   = false;
+        uint8_t LAST_TM_SWITCH    = 0;
+
         int16_t ReadADC(uint8_t addr);
         int16_t GetCalibratedValue(uint16_t adcValue, uint16_t zero, uint16_t five);
     public:
-        uint8_t LEDCycle = 0;
+        uint16_t LEDCycle = 0;
 
         /// @brief RESET, CLOCK, PLAY
         LEDState OUT_LEDS[NUM_LEDS];
@@ -62,17 +75,19 @@ class IOHelper
         uint8_t IN_UD_INDEX     = 0;
         int16_t IN_BPM_KNOB     = 0;
         int16_t IN_SWING_KNOB   = 0;
-        uint8_t IN_TM_SWITCH    = 0;
+        uint8_t IN_TMULT_SWITCH = 0;
 
         bool FLAG_PLAY  = false;
         bool FLAG_CLK   = false;
         bool FLAG_RST   = false;
+
+        bool FLAG_TMULT = false;
         
 
         void Init();
         void ReadFastInputs(long dt);
         void ReadSlowInputs(long dt);
-        void WriteOutputs();
+        void WriteOutputs(long dt);
 
         bool ProcessResetFlag();
         bool ProcessClockFlag();

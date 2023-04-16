@@ -24,13 +24,18 @@ IOHelper io;
 
 void update()
 {
+    //--------Read CV Rate Inputs--------
     io.ReadSlowInputs(deltaMicros);
-    printf("%d\n", io.CV_scrub );
+    //printf("%d\n", io.CV_scrub );
 
-    //Blink LED to confirm not frozen
+    //--------Call Helper Classes' CV Rate Updates--------
+    chronos.SlowUpdate(deltaMicros);
+
+    //--------Write CV Rate Outputs--------
+    io.WriteOutputs(deltaMicros);
+    
+    //--------Blink Heartbeat LED to confirm not frozen--------
     gpio_put(PICO_DEFAULT_LED_PIN, ((frameStartMicros/1'000) % 1'000) < 500);
-
-    io.WriteOutputs();
 }
 
 
@@ -51,11 +56,13 @@ int main(void)
     
     //--------Initialize Helper Classes--------
     io.Init();      //general I/O helper
-    chronos.Init(); //timing handler
+    chronos.Init(&io); //timing handler
 
     //start audio-rate loop
     audioRateTimer = new repeating_timer_t();
     add_repeating_timer_us(-40, audio_rate_callback, NULL, audioRateTimer); //25kHz (40uS interval)
+
+    io.SetLEDState(PanelLED::PlayButton, LEDState::BLINK_SLOW);
             
     while (true)
     {
@@ -66,6 +73,7 @@ int main(void)
 
         //--------Run non-time-critical tasks--------
         update();
+
         //check if boot button is held, and enter boot mode if so
         check_for_reset();
         //repeat this loop once every ms
