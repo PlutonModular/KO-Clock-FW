@@ -78,6 +78,8 @@ void Chronos::SetBPM(float exactBPM)
 
 void Chronos::SlowUpdate(uint32_t deltaMicros)
 {
+
+
 	if(io->ProcessPlayFlag())
     {
         isPlayMode = !isPlayMode;
@@ -90,6 +92,12 @@ void Chronos::SlowUpdate(uint32_t deltaMicros)
     }
     else if(isPlayMode)
     {
+        // -------- Set BPM From Knob --------
+        float newBPM = io->IN_BPM_KNOB; //0-65535
+        newBPM /= 65535.0f;
+        newBPM *= 200.0f; //scale BPM knob to 0-200 BPM
+        SetBPM(newBPM);
+        // -------- Set LEDs --------
         bool isClockLEDOn = beatTime % 64 < 32;
         io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);
         io->SetLEDState(PanelLED::Clock, LEDState::SOLID_OFF);
