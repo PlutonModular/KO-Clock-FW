@@ -191,9 +191,9 @@ void IOHelper::WriteOutputs(long dt)
                 break;
             case LEDState::SOLID_HALF:
                 if(i == PanelLED::PlayButton)
-                    thisLedState = (LEDCycle%16 > 11); //gives a better "50% brightness" on the button LED
+                    thisLedState = (LEDCycle%32 > 26); //gives a better "50% brightness" on the button LED
                 else
-                    thisLedState = (LEDCycle%16 > 14); //gives a better "50% brightness" on the rect LEDs
+                    thisLedState = (LEDCycle%32 > 28); //gives a better "50% brightness" on the rect LEDs
                 break;
             case LEDState::BLINK_SLOW:
                 thisLedState = (LEDCycle%8192 > 4096);
