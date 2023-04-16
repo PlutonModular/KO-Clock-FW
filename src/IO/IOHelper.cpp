@@ -72,6 +72,15 @@ void IOHelper::ReadFastInputs(long dt)
     WAS_RST  = TMP_RST;
 }
 
+int16_t IOHelper::DoHysteresisWrite(int16_t var, int16_t newValue, int16_t hysteresisThreshold)
+{
+    if(abs(newValue - var) > hysteresisThreshold)
+    {
+        return newValue;
+    }
+    return var;
+}
+
 void IOHelper::ReadSlowInputs(long dt)
 {
     //--------Read Play Button--------
@@ -91,8 +100,8 @@ void IOHelper::ReadSlowInputs(long dt)
     LAST_TM_SWITCH = IN_TMULT_SWITCH;
 
     //--------Read Knobs--------
-    IN_SWING_KNOB = ReadADC(0);
-    IN_BPM_KNOB = ReadADC(1);
+    IN_SWING_KNOB   = DoHysteresisWrite(IN_SWING_KNOB,  ReadADC(0), 50);
+    IN_BPM_KNOB     = DoHysteresisWrite(IN_BPM_KNOB,    ReadADC(1), 30);
     int16_t IN_UD_KNOB = ReadADC(2);
     CV_UD = GetCalibratedValue(ReadADC(3), 2300, 340);
     CV_scrub = GetCalibratedValue(ReadADC(4), 2300, 340);
@@ -154,7 +163,7 @@ int16_t IOHelper::ReadADC(uint8_t addr)
         //printf("TEST %u\t%d\n", i, (addr & (0b00000001 << i)) > 0);
     }
     //allow MUX and ADC to settle
-    sleep_us(10);
+    sleep_us(20);
     uint16_t adcVal = adc_read();
     return adcVal;
 }

@@ -56,6 +56,8 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
 
 void Chronos::SetBPM(float exactBPM)
 {
+    if(exactBPM == currentExactBPM) return;
+    currentExactBPM = exactBPM;
     printf("CALCULATING VALUES FOR BPM: %f\n", exactBPM);
     if(exactBPM == 0)
     {
@@ -93,8 +95,8 @@ void Chronos::SlowUpdate(uint32_t deltaMicros)
     else if(isPlayMode)
     {
         // -------- Set BPM From Knob --------
-        float newBPM = io->IN_BPM_KNOB; //0-65535
-        newBPM /= 65535.0f;
+        float newBPM = io->IN_BPM_KNOB; //0-4096
+        newBPM /= 4096.0f;
         newBPM *= 200.0f; //scale BPM knob to 0-200 BPM
         SetBPM(newBPM);
         // -------- Set LEDs --------

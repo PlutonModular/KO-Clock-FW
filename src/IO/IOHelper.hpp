@@ -59,12 +59,20 @@ class IOHelper
 
         int16_t ReadADC(uint8_t addr);
         int16_t GetCalibratedValue(uint16_t adcValue, uint16_t zero, uint16_t five);
+        
+        /// @brief Does Hysterises on an input
+        /// @param var variable we're writing to, used to compare to new value 
+        /// @param newValue newly read value
+        /// @param hysteresisThreshold any newValue less than this amt away from the previous value will be ignored
+        /// @return new value of var, with hysterises applied
+        int16_t DoHysteresisWrite(int16_t var, int16_t newValue, int16_t hysteresisThreshold);
+
     public:
         uint16_t LEDCycle = 0;
 
         /// @brief RESET, CLOCK, PLAY
         LEDState OUT_LEDS[NUM_LEDS];
-        
+
         /// @brief 1, 1/2, 1/4, 1/16, UD, UD/2
         bool OUT_GATES[NUM_GATE_OUTS];
         int16_t CV_UD           = 0;

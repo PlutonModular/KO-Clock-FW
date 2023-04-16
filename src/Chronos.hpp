@@ -25,6 +25,8 @@ class Chronos
 
 		/// @brief The number of microseconds between incrementations of "time" variable; calculated in SetBPM
 		uint16_t microsPerTimeGradation = 0;
+		/// @brief Used to prevent setting BPM to its current value
+		float currentExactBPM = 0;
 		
 		/// @brief Microseconds in this time Gradation; when > microsPerTimeGradation, reset and increment beatTime
 		uint16_t timeInThisGradation = 0;
