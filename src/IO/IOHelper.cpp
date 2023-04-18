@@ -39,8 +39,8 @@ void IOHelper::Init()
     //Gate Outs
     for(int i = 0; i < NUM_GATE_OUTS; i++)
     {
-        gpio_init(GATE_IO_PINS[i]);
-        gpio_set_dir(GATE_IO_PINS[i], GPIO_OUT);
+        gpio_init(GATE_OUT_PINS[i]);
+        gpio_set_dir(GATE_OUT_PINS[i], GPIO_OUT);
     }
     //LED Outs
     for(int i = 0; i < NUM_LEDS; i++)
@@ -123,8 +123,6 @@ void IOHelper::ReadSlowInputs(long dt)
 //UD        2300    340     4095    4550
 //swing     36      3010
 
-///RETURNED VALUES: -5V = -2048, 0V = 0, 5V = 2048
-///reminder: negative on bipolars only reads to -4.5V, while positive reads to abour 5.5V..
 int16_t IOHelper::GetCalibratedValue(uint16_t adcValue, uint16_t zero, uint16_t five)
 {
     //input value is from 0-4096
@@ -134,7 +132,7 @@ int16_t IOHelper::GetCalibratedValue(uint16_t adcValue, uint16_t zero, uint16_t 
     adcValueReal -= long(zero)*256L;
 
     //bring maximum to scaled 5V
-    adcValueReal *= (long((five - zero)));
+    adcValueReal *= long((five - zero));
 
     //adcValueReal *= 4L;
 
@@ -177,7 +175,7 @@ void IOHelper::WriteOutputs(long dt)
     //Set Gates
     for(int i = 0; i < NUM_GATE_OUTS; i++)
     {
-        gpio_put(GATE_IO_PINS[i], OUT_GATES[i]);
+        gpio_put(GATE_OUT_PINS[i], OUT_GATES[i]);
     }
     //Set LEDs
     for(int i = 0; i < NUM_LEDS; i++)
@@ -185,6 +183,7 @@ void IOHelper::WriteOutputs(long dt)
         bool thisLedState = false;
         switch(OUT_LEDS[i])
         {
+            //-------- SOLID --------
             case LEDState::SOLID_OFF:
                 thisLedState = false;
                 break;
@@ -193,53 +192,55 @@ void IOHelper::WriteOutputs(long dt)
                 break;
             case LEDState::SOLID_HALF:
                 if(i == PanelLED::PlayButton)
-                    thisLedState = (LEDCycle%32 > 26); //gives a better "50% brightness" on the button LED
+                    thisLedState = LEDCycle%32 > 26; //gives a better "50% brightness" on the button LED
                 else
-                    thisLedState = (LEDCycle%32 > 28); //gives a better "50% brightness" on the rect LEDs
+                    thisLedState = LEDCycle%32 > 28; //gives a better "50% brightness" on the rect LEDs
                 break;
+            //-------- BLINK --------
             case LEDState::BLINK_SLOW:
-                thisLedState = (LEDCycle%8192 > 4096);
+                thisLedState = LEDCycle%8192 > 4096;
                 break;
             case LEDState::BLINK_MED:
-                thisLedState = (LEDCycle%4096 > 2048);
+                thisLedState = LEDCycle%4096 > 2048;
                 break;
             case LEDState::BLINK_FAST:
-                thisLedState = (LEDCycle%2048 > 1024);
+                thisLedState = LEDCycle%2048 > 1024;
                 break;
+            //-------- FADE --------
             case LEDState::FADE_SLOWEST:
             {
                 int fadeBrightness = abs((LEDCycle) - 32'768); //0-32'768 (no %, clamped by uint16 limit)
-                thisLedState = (LEDCycle%64 > fadeBrightness/512);
+                thisLedState = LEDCycle%64 > fadeBrightness/512;
                 break;
             }
             case LEDState::FADE_SLOW:
             {
                 int fadeBrightness = abs((LEDCycle%32'768) - 16'384); //0-16'384
-                thisLedState = (LEDCycle%64 > fadeBrightness/256);
+                thisLedState = LEDCycle%64 > fadeBrightness/256;
                 break;
             }
             case LEDState::FADE_MED:
             {
                 int fadeBrightness = abs((LEDCycle%16'384) - 8'192); //0-8192
-                thisLedState = (LEDCycle%32 > fadeBrightness/256);
+                thisLedState = LEDCycle%32 > fadeBrightness/256;
                 break;
             }
             case LEDState::FADE_FAST:
             {
                 int fadeBrightness = abs((LEDCycle%8'192) - 4'096); //0-4096
-                thisLedState = (LEDCycle%16 > fadeBrightness/256);
+                thisLedState = LEDCycle%16 > fadeBrightness/256;
                 break;
             }
             case LEDState::FADE_FASTER:
             {
                 int fadeBrightness = abs((LEDCycle%2'048) - 1'024); //0-1024
-                thisLedState = (LEDCycle%16 > fadeBrightness/64);
+                thisLedState = LEDCycle%16 > fadeBrightness/64;
                 break;
             }
             case LEDState::FADE_FASTEST:
             {
                 int fadeBrightness = abs((LEDCycle%1'024) - 512); //0-512
-                thisLedState = (LEDCycle%16 > fadeBrightness/32);
+                thisLedState = LEDCycle%16 > fadeBrightness/32;
                 break;
             }
         }
