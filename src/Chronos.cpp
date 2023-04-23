@@ -18,15 +18,58 @@ bool Chronos::CalcGate(uint32_t thisBeatTime, uint16_t divisor, uint16_t gateLen
     return (thisBeatTime%divisor)*1024 < divisor*gateLen;
 }
 
+void Chronos::AddBeatToBPMEstimate()
+{
+    //add the length of this pulse to the pulse length buffer
+    uint64_t currentTimeUS = time_us_64();
+    clockInDiffBuffer[clockInDiffBufferIterator] = currentTimeUS - lastClockTime;
+    lastClockTime = currentTimeUS;
+    
+    //increase clockInDiffBufferIterator by one
+    clockInDiffBufferIterator++;
+    if(clockInDiffBufferIterator >= CLOCKIN_BUFFER_SIZE) clockInDiffBufferIterator = 0;
+
+    //average clockInDiffBuffer time differences and convert to seconds
+    float average = 0;
+    for(int i = 0; i < CLOCKIN_BUFFER_SIZE; i++)
+    {
+        average += clockInDiffBuffer[i]/1'000'000.0f; //seconds
+    }
+    average /= (double)CLOCKIN_BUFFER_SIZE;
+	printf("Average:\t%f\n", average);
+    //Convert to BPM;
+    estimatedBPM = (1.0f/average) * (60.0f/float(clockPPQN))*0.9999f; //better to be slightly under than over to help prevent double-triggering or weirdness
+    printf("Estimated BPM:\t%f\n", estimatedBPM);
+}
+
 void Chronos::FastUpdate(uint32_t deltaMicros)
 {
     if(isFollowMode)
     {
-
+        //Check for clock pulse
+        if(io->ProcessClockFlag())
+        {
+            //Update running BPM estimate and reset ext clock keepalive
+            AddBeatToBPMEstimate();
+            externalClockKeepaliveCountdown = CLOCK_KEEPALIVE_TIME;
+        }
+        //Process the keepalive timer. If it goes below zero, exit follow mode and stop play mode
+        externalClockKeepaliveCountdown -= deltaMicros;
+        if(externalClockKeepaliveCountdown < 0)
+        {
+            isFollowMode = false;
+            isPlayMode = false; //don't keep running if master clock stops!
+        }
     }
     else if(isPlayMode)
     {
-        
+        if(io->ProcessClockFlag())
+        {
+            AddBeatToBPMEstimate();
+            isFollowMode = true;
+            externalClockKeepaliveCountdown = CLOCK_KEEPALIVE_TIME;
+        }
+
         timeInThisGradation += deltaMicros;
         if(timeInThisGradation > microsPerTimeGradation)
         {
