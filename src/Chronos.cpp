@@ -26,14 +26,17 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
     }
     else if(isPlayMode)
     {
-        
-        timeInThisGradation += deltaMicros;
-        if(timeInThisGradation > microsPerTimeGradation)
+        //stop if set to 0BPM, or else it's actually 0.00767988281 BPM, which might spook someone in 2.17 hours!!
+        if(microsPerTimeGradation != UINT16_MAX)
         {
-            timeInThisGradation -= microsPerTimeGradation;
-            if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
-            else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
-            else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
+            timeInThisGradation += deltaMicros;
+            if(timeInThisGradation > microsPerTimeGradation)
+            {
+                timeInThisGradation -= microsPerTimeGradation;
+                if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
+                else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
+                else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
+            }
         }
 
         //reset on the beat
@@ -60,6 +63,7 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
     last_beatTime = beatTime;
 }
 
+//We sacrifice a little bit of accuracy here in exchange for faster calculation and better precision.
 void Chronos::SetBPM(float exactBPM)
 {
     if(exactBPM == currentExactBPM) return;
