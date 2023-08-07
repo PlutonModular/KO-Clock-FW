@@ -63,10 +63,6 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
     }
     else if(isPlayMode)
     {
-<<<<<<< HEAD
-        //stop if set to 0BPM, or else it's actually 0.00767988281 BPM, which might spook someone in 2.17 hours!!
-        if(microsPerTimeGradation != UINT16_MAX)
-=======
         if(io->ProcessClockFlag())
         {
             AddBeatToBPMEstimate();
@@ -74,17 +70,20 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
             externalClockKeepaliveCountdown = CLOCK_KEEPALIVE_TIME;
         }
 
-        timeInThisGradation += deltaMicros;
-        if(timeInThisGradation > microsPerTimeGradation)
->>>>>>> 440052ae61dd2da12558b123b4d387348df90eae
+        //stop if set to 0BPM, or else it's actually 0.00767988281 BPM, which might spook someone in 2.17 hours!!
+        if(microsPerTimeGradation != UINT16_MAX)
         {
             timeInThisGradation += deltaMicros;
             if(timeInThisGradation > microsPerTimeGradation)
             {
-                timeInThisGradation -= microsPerTimeGradation;
-                if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
-                else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
-                else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
+                timeInThisGradation += deltaMicros;
+                if(timeInThisGradation > microsPerTimeGradation)
+                {
+                    timeInThisGradation -= microsPerTimeGradation;
+                    if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
+                    else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
+                    else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
+                }
             }
         }
 
