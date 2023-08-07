@@ -9,6 +9,22 @@
 #include <cmath>
 #include "IO/IOHelper.hpp"
 
+#define CLOCKIN_BUFFER_SIZE 50
+
+/// One second, making minimum detected BPM 2.4
+#define CLOCK_KEEPALIVE_TIME 1'000'000.0f
+
+enum PPQNType
+{
+	PPQN_1 = 1,
+	PPQN_4 = 4,
+	PPQN_8 = 8,
+	PPQN_16 = 16,
+	PPQN_32 = 32,
+	PPQN_24 = 24,
+	PPQN_48 = 48
+};
+
 /// @brief Clock Timing Manager Class
 class Chronos
 {
@@ -31,6 +47,25 @@ class Chronos
 		/// @brief Microseconds in this time Gradation; when > microsPerTimeGradation, reset and increment beatTime
 		uint16_t timeInThisGradation = 0;
 
+
+		//-------- EXT CLOCK IN VARIABLES --------
+
+		/// @brief Current PPQN setting. Set by SetPPQN
+		PPQNType clockPPQN = PPQNType::PPQN_1;
+		/// @brief Circular buffer of the time between the most recent clock pulses, used to estimate BPM for interpolation
+		uint64_t clockInDiffBuffer[CLOCKIN_BUFFER_SIZE];
+		/// @brief Write pointer for clockInBuffer
+		uint16_t clockInDiffBufferIterator = 0;
+		/// @brief Current estimated BPM based on clock in timings
+		float estimatedBPM = 120;
+		/// @brief Time of last clock pulse
+		uint64_t lastClockTime = 0;
+		/// @brief Reset to CLOCK_KEEPALIVE_TIME on each clock in pulse. Used to detect when an external clock is stopped.
+		int32_t externalClockKeepaliveCountdown = 0;
+		/// @brief Called when clock in goes high, used to update and calculate the input BPM estimate.
+		void AddBeatToBPMEstimate();
+
+		// -------- Methods --------
 
 		/// @brief Calculate whether a gate should be on
 		/// @param divisor number of 512th notes the gate cycle should last
