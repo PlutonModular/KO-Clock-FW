@@ -14,7 +14,6 @@
 
 repeating_timer_t *audioRateTimer;
 
-
 uint64_t frameLastMicros = 0;
 uint64_t frameStartMicros = 0;
 uint64_t deltaMicros = 0;
@@ -42,8 +41,8 @@ void update()
 bool audio_rate_callback(struct repeating_timer *t)
 {
     //--------Call Helper Classes' Audio Rate Updates--------
-    io.ReadFastInputs(40);
-    chronos.FastUpdate(40);
+    io.ReadFastInputs(20);
+    chronos.FastUpdate(20);
     return true; //keep doing this
 }
 
@@ -61,7 +60,7 @@ int main(void)
 
     //start audio-rate loop
     audioRateTimer = new repeating_timer_t();
-    add_repeating_timer_us(-40, audio_rate_callback, NULL, audioRateTimer); //25kHz (40uS interval)
+    add_repeating_timer_us(-20, audio_rate_callback, NULL, audioRateTimer); //50kHz (20uS interval)
 
     io.SetLEDState(PanelLED::PlayButton, LEDState::BLINK_SLOW);
             

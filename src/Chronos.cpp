@@ -10,6 +10,11 @@
 void Chronos::Init(IOHelper *ioh)
 {
 	io = ioh;
+    
+    for(int i = 0; i < CLOCKIN_BUFFER_SIZE; i++)
+    {
+        clockInDiffBuffer[i] = 0;
+    }
 }
 
 bool Chronos::CalcGate(uint32_t thisBeatTime, uint16_t divisor, uint16_t gateLen)
@@ -30,16 +35,25 @@ void Chronos::AddBeatToBPMEstimate()
     if(clockInDiffBufferIterator >= CLOCKIN_BUFFER_SIZE) clockInDiffBufferIterator = 0;
 
     //average clockInDiffBuffer time differences and convert to seconds
+    int elementsAveraged = 0;
     float average = 0;
     for(int i = 0; i < CLOCKIN_BUFFER_SIZE; i++)
     {
+        if(clockInDiffBuffer[i] == 0) continue;
         average += clockInDiffBuffer[i]/1'000'000.0f; //seconds
+        elementsAveraged++;
     }
-    average /= (double)CLOCKIN_BUFFER_SIZE;
-	printf("Average:\t%f\n", average);
+    average /= (double)elementsAveraged;
+	debug("Average:\t%f\n", average);
     //Convert to BPM;
     estimatedBPM = (1.0f/average) * (60.0f/float(clockPPQN))*0.9999f; //better to be slightly under than over to help prevent double-triggering or weirdness
-    printf("Estimated BPM:\t%f\n", estimatedBPM);
+    debug("Estimated BPM:\t%f\n", estimatedBPM);
+}
+void Chronos::AddBeatToBPMEstimateLastOnly()
+{
+    //add the length of this pulse to the pulse length buffer
+    uint64_t currentTimeUS = time_us_64();
+    lastClockTime = currentTimeUS;
 }
 
 void Chronos::FastUpdate(uint32_t deltaMicros)
@@ -51,8 +65,49 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
         {
             //Update running BPM estimate and reset ext clock keepalive
             AddBeatToBPMEstimate();
-            externalClockKeepaliveCountdown = CLOCK_KEEPALIVE_TIME;
+            externalClockKeepaliveCountdown = max(microsPerTimeGradation * CLOCKIN_WAIT_MULT, CLOCKIN_MIN_WAIT);
+            clockPulseCounter++;
+            isPlayMode = true;
         }
+
+        //Check for reset pulse (after clock, so a full stop doesn't start at an advanced time)
+        if(io->ProcessResetFlag())
+        {
+            clockPulseCounter = 0;
+            last_beatTime = 0;
+            beatTime = 0;
+        }
+
+        if(isPlayMode)
+        {
+        //Advance time
+        timeInThisGradation += deltaMicros;
+        if(timeInThisGradation >= microsPerTimeGradation)
+        {
+            timeInThisGradation -= microsPerTimeGradation;
+            if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
+            else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
+            else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
+        }
+
+        //Full quarter note elapsed. snap time to quarter
+        if(clockPulseCounter >= uint16_t(clockPPQN))
+        {
+            clockPulseCounter -= uint16_t(clockPPQN);
+            beatTime = floor(round(beatTime/512.0)*512);
+        }
+
+            //TEMPORARY IMPLEMENTATION FOR TESTING, PROBABLY VERY BAD
+            io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
+            io->OUT_GATES[1] = CalcGate(256, gateLen);
+            io->OUT_GATES[2] = CalcGate(128, gateLen);
+            io->OUT_GATES[3] = CalcGate(64 , gateLen);
+
+            io->OUT_GATES[4] = CalcGate(8 <<(7-io->IN_UD_INDEX), gateLen);
+            io->OUT_GATES[5] = CalcGate(16<<(7-io->IN_UD_INDEX), gateLen);
+        }
+
+
         //Process the keepalive timer. If it goes below zero, exit follow mode and stop play mode
         externalClockKeepaliveCountdown -= deltaMicros;
         if(externalClockKeepaliveCountdown < 0)
@@ -65,25 +120,23 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
     {
         if(io->ProcessClockFlag())
         {
-            AddBeatToBPMEstimate();
+            AddBeatToBPMEstimateLastOnly();
             isFollowMode = true;
-            externalClockKeepaliveCountdown = CLOCK_KEEPALIVE_TIME;
+            isPlayMode = true;
+            externalClockKeepaliveCountdown = max(microsPerTimeGradation * CLOCKIN_WAIT_MULT, CLOCKIN_MIN_WAIT);
         }
 
         //stop if set to 0BPM, or else it's actually 0.00767988281 BPM, which might spook someone in 2.17 hours!!
         if(microsPerTimeGradation != UINT16_MAX)
         {
+            //Advance time
             timeInThisGradation += deltaMicros;
             if(timeInThisGradation > microsPerTimeGradation)
             {
-                timeInThisGradation += deltaMicros;
-                if(timeInThisGradation > microsPerTimeGradation)
-                {
-                    timeInThisGradation -= microsPerTimeGradation;
-                    if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
-                    else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
-                    else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
-                }
+                timeInThisGradation -= microsPerTimeGradation;
+                if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
+                else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
+                else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
             }
         }
 
@@ -99,14 +152,27 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
         io->OUT_GATES[2] = CalcGate(128, gateLen);
         io->OUT_GATES[3] = CalcGate(64 , gateLen);
 
+        io->OUT_GATES[4] = CalcGate(8 <<(7-io->IN_UD_INDEX), gateLen);
+        io->OUT_GATES[5] = CalcGate(16<<(7-io->IN_UD_INDEX), gateLen);
+
     }
     else
     {
+        if(io->ProcessClockFlag())
+        {
+            AddBeatToBPMEstimateLastOnly();
+            isFollowMode = true;
+            isPlayMode = true;
+            externalClockKeepaliveCountdown = max(microsPerTimeGradation * CLOCKIN_WAIT_MULT, CLOCKIN_MIN_WAIT);
+        }
         beatTime = 0;
         io->OUT_GATES[0] = false;
         io->OUT_GATES[1] = false;
         io->OUT_GATES[2] = false;
         io->OUT_GATES[3] = false;
+
+        io->OUT_GATES[4] = false;
+        io->OUT_GATES[5] = false;
     }
     last_beatTime = beatTime;
 }
@@ -116,24 +182,24 @@ void Chronos::SetBPM(float exactBPM)
 {
     if(exactBPM == currentExactBPM) return;
     currentExactBPM = exactBPM;
-    printf("CALCULATING VALUES FOR BPM: %f\n", exactBPM);
+    debug("CALCULATING VALUES FOR BPM: %f\n", exactBPM);
     if(exactBPM == 0)
     {
         microsPerTimeGradation = UINT16_MAX; //0BPM
         return;
     }
     float b = exactBPM/60.0f;
-    printf("\tBPS: %f\n", b);
+    debug("\tBPS: %f\n", b);
     b = 1/b;
-    printf("\tSPB: %f\n", b);
+    debug("\tSPB: %f\n", b);
     b *= 1'000'000.0f;
-    printf("\tmicros Per beat: %f\n", b);
+    debug("\tmicros Per beat: %f\n", b);
     b /= 128.0f; //convert from uS per 4th note to uS per 512th note
-    printf("\tmicros Per 512th: %f\n", b);
+    debug("\tmicros Per 512th: %f\n", b);
 
     microsPerTimeGradation = uint32_t(floorf(b));
-    printf("\tFINAL VALUE: %u\n", microsPerTimeGradation);
-    printf("\tREAL QN TIME: %u\n", microsPerTimeGradation*64);
+    debug("\tFINAL VALUE: %u\n", microsPerTimeGradation);
+    debug("\tREAL QN TIME: %u\n", microsPerTimeGradation*64);
 }
 
 void Chronos::SlowUpdate(uint32_t deltaMicros)
@@ -150,6 +216,7 @@ void Chronos::SlowUpdate(uint32_t deltaMicros)
         bool isClockLEDOn = beatTime % 64 < 32;
         io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);
         io->SetLEDState(PanelLED::Reset, io->FLAG_RST?LEDState::FADE_FASTEST:LEDState::SOLID_OFF);
+        SetBPM(estimatedBPM);
     }
     else if(isPlayMode)
     {
@@ -157,7 +224,11 @@ void Chronos::SlowUpdate(uint32_t deltaMicros)
         float newBPM = io->IN_BPM_KNOB; //0-4096
         newBPM /= 4096.0f;
         newBPM *= 200.0f; //scale BPM knob to 0-200 BPM
-        SetBPM(newBPM);
+        float bpmMod = io->CV_timeMult;
+        bpmMod /= 2048.0f;
+        bpmMod *= 5;
+        bpmMod += 1;
+        SetBPM(newBPM*bpmMod);
         // -------- Set LEDs --------
         bool isClockLEDOn = beatTime % 64 < 32;
         io->SetLEDState(PanelLED::PlayButton, isClockLEDOn?LEDState::SOLID_ON:LEDState::SOLID_HALF);

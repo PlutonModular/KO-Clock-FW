@@ -8,7 +8,6 @@
 
 void IOHelper::Init()
 {
-
     //--------Set up Inputs--------
 
     //Play Button

@@ -7,12 +7,16 @@
 #pragma once
 
 #include <cmath>
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)>(b)?(a):(b))
+
 #include "IO/IOHelper.hpp"
+#include "debug.h"
 
-#define CLOCKIN_BUFFER_SIZE 50
+#define CLOCKIN_BUFFER_SIZE 64
 
-/// One second, making minimum detected BPM 2.4
-#define CLOCK_KEEPALIVE_TIME 1'000'000.0f
+#define CLOCKIN_MIN_WAIT 100'000
+#define CLOCKIN_WAIT_MULT 32
 
 enum PPQNType
 {
@@ -51,7 +55,7 @@ class Chronos
 		//-------- EXT CLOCK IN VARIABLES --------
 
 		/// @brief Current PPQN setting. Set by SetPPQN
-		PPQNType clockPPQN = PPQNType::PPQN_1;
+		PPQNType clockPPQN = PPQNType::PPQN_24;
 		/// @brief Circular buffer of the time between the most recent clock pulses, used to estimate BPM for interpolation
 		uint64_t clockInDiffBuffer[CLOCKIN_BUFFER_SIZE];
 		/// @brief Write pointer for clockInBuffer
@@ -62,8 +66,14 @@ class Chronos
 		uint64_t lastClockTime = 0;
 		/// @brief Reset to CLOCK_KEEPALIVE_TIME on each clock in pulse. Used to detect when an external clock is stopped.
 		int32_t externalClockKeepaliveCountdown = 0;
+		/// @brief Used to keep track of when a full quarter note has elapsed
+		uint16_t clockPulseCounter = 0;
 		/// @brief Called when clock in goes high, used to update and calculate the input BPM estimate.
 		void AddBeatToBPMEstimate();
+		/// @brief Called when clock in goes high, used to update and calculate the input BPM estimate.
+		/// @note This version only sets "lastClockTime", with its intended use being to capture the first pulse after
+		/// a long delay that would otherwise incorrectly lower the average BPM estimate.
+		void AddBeatToBPMEstimateLastOnly();
 
 		// -------- Methods --------
 
