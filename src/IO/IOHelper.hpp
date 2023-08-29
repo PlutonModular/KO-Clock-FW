@@ -119,6 +119,14 @@ class IOHelper
         //-------- CV Inputs --------
 
         /// @brief User Division CV Value.
+        int16_t CV_UD_Raw           = 0;
+        /// @brief Scrub/Offset CV Value.
+        int16_t CV_scrub_Raw        = 0;
+        /// @brief Time Multiply CV Value.
+        int16_t CV_timeMult_Raw     = 0;
+        /// @brief Swing CV Value.
+        int16_t CV_swing_Raw        = 0;
+        /// @brief User Division CV Value.
         int16_t CV_UD           = 0;
         /// @brief Scrub/Offset CV Value.
         int16_t CV_scrub        = 0;
@@ -183,9 +191,13 @@ class IOHelper
         /// @param dt the actual time in microseconds since the last time this was called
         void ReadSlowInputs(long dt);
 
+        /// @brief Pushes the output values to the hardware, doing necessary calculations. Should be called in "Audio rate" loop after setting output values.
+        /// @param dt the actual time in microseconds since the last time this was called
+        void WriteFastOutputs(long dt);
+
         /// @brief Pushes the output values to the hardware, doing necessary calculations. Should be called in "CV rate" loop after setting output values.
         /// @param dt the actual time in microseconds since the last time this was called
-        void WriteOutputs(long dt);
+        void WriteSlowOutputs(long dt);
 
         /// @brief Checks if FLAG_RST is set, if so unsets it and returns true
         /// @return true if FLAG_RST was set, false otherwise

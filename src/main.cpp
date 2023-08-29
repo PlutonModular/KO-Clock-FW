@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "pico/multicore.h"
 
 #include "ResetFromBoot.hpp"
 
@@ -31,18 +32,22 @@ void update()
     chronos.SlowUpdate(deltaMicros);
 
     //--------Write CV Rate Outputs--------
-    io.WriteOutputs(deltaMicros);
+    io.WriteSlowOutputs(deltaMicros);
     
     //--------Blink Heartbeat LED to confirm not frozen--------
     gpio_put(PICO_DEFAULT_LED_PIN, ((frameStartMicros/1'000) % 1'000) < 500);
 }
 
-
+uint64_t fastLastMicros = 0;
 bool audio_rate_callback(struct repeating_timer *t)
 {
+    uint64_t now = time_us_64();
+    uint64_t dt = now - fastLastMicros;
     //--------Call Helper Classes' Audio Rate Updates--------
-    io.ReadFastInputs(20);
-    chronos.FastUpdate(20);
+    io.ReadFastInputs(dt);
+    chronos.FastUpdate(dt);
+    io.WriteFastOutputs(dt);
+    fastLastMicros = now;
     return true; //keep doing this
 }
 
@@ -58,10 +63,11 @@ int main(void)
     chronos.Init(&io); //timing handler
     chronos.SetBPM(165);
 
-    //start audio-rate loop
+    //start chronos
+    alarm_pool *chronos_pool = alarm_pool_create(1, 1);
     audioRateTimer = new repeating_timer_t();
-    add_repeating_timer_us(-20, audio_rate_callback, NULL, audioRateTimer); //50kHz (20uS interval)
-
+    alarm_pool_add_repeating_timer_us(chronos_pool, -40, audio_rate_callback, NULL, audioRateTimer); //25kHz (40uS interval)
+    
     io.SetLEDState(PanelLED::PlayButton, LEDState::BLINK_SLOW);
             
     while (true)
@@ -76,7 +82,7 @@ int main(void)
 
         //check if boot button is held, and enter boot mode if so
         check_for_reset();
-        //repeat this loop once every ms
+
         sleep_us(1000);
     }
 }

@@ -131,7 +131,7 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
         {
             //Advance time
             timeInThisGradation += deltaMicros;
-            if(timeInThisGradation > microsPerTimeGradation)
+            if(timeInThisGradation >= microsPerTimeGradation)
             {
                 timeInThisGradation -= microsPerTimeGradation;
                 if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;

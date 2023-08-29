@@ -104,10 +104,26 @@ void IOHelper::ReadSlowInputs(long dt)
     IN_SWING_KNOB   = DoHysteresisWrite(IN_SWING_KNOB,  ReadADC(0), 50);
     IN_BPM_KNOB     = DoHysteresisWrite(IN_BPM_KNOB,    ReadADC(1), 30);
     int16_t IN_UD_KNOB = ReadADC(2);
-    CV_UD = GetCalibratedValue(ReadADC(3), 2300, 340);
-    CV_scrub = GetCalibratedValue(ReadADC(4), 2300, 340);
-    CV_timeMult = GetCalibratedValue(ReadADC(5), 2300, 340);
-    CV_swing = GetCalibratedValue(ReadADC(6), 36, 3010);
+
+    //TODO: better hysterises method, and proper smoothing. This is fine for the demo but kind of cringe tbh
+    CV_UD_Raw +=        CV_UD_Raw       + CV_UD_Raw       + CV_UD_Raw       + CV_UD_Raw       + CV_UD_Raw       + CV_UD_Raw       + ReadADC(3);
+    CV_scrub_Raw +=     CV_scrub_Raw    + CV_scrub_Raw    + CV_scrub_Raw    + CV_scrub_Raw    + CV_scrub_Raw    + CV_scrub_Raw    + ReadADC(4);
+    CV_timeMult_Raw +=  CV_timeMult_Raw + CV_timeMult_Raw + CV_timeMult_Raw + CV_timeMult_Raw + CV_timeMult_Raw + CV_timeMult_Raw + ReadADC(5);
+    CV_swing_Raw +=     CV_swing_Raw    + CV_swing_Raw    + CV_swing_Raw    + CV_swing_Raw    + CV_swing_Raw    + CV_swing_Raw    + ReadADC(6);
+    CV_UD_Raw /= 8;
+    CV_scrub_Raw /= 8;
+    CV_timeMult_Raw /= 8;
+    CV_swing_Raw /= 8;
+
+    CV_UD       = DoHysteresisWrite(CV_UD      , GetCalibratedValue(CV_UD_Raw      , 2300, 340), 30);
+    CV_scrub    = DoHysteresisWrite(CV_scrub   , GetCalibratedValue(CV_scrub_Raw   , 2300, 340), 30);
+    CV_timeMult = DoHysteresisWrite(CV_timeMult, GetCalibratedValue(CV_timeMult_Raw, 2300, 340), 30);
+    CV_swing    = DoHysteresisWrite(CV_swing   , GetCalibratedValue(CV_swing_Raw   , 2300, 340), 30);
+    
+    if(abs(CV_UD) < 20)       CV_UD = 0;
+    if(abs(CV_scrub) < 20)    CV_scrub = 0;
+    if(abs(CV_timeMult) < 20) CV_timeMult = 0;
+    if(abs(CV_swing) < 20)    CV_swing = 0;
 
     //Set UD index (only if not grounded; if grounded, UD selector is between positions)
     if(IN_UD_KNOB > 128)
@@ -162,20 +178,15 @@ int16_t IOHelper::ReadADC(uint8_t addr)
         //printf("TEST %u\t%d\n", i, (addr & (0b00000001 << i)) > 0);
     }
     //allow MUX and ADC to settle
-    sleep_us(20);
+    sleep_us(50);
     uint16_t adcVal = adc_read();
     return adcVal;
 }
 
-void IOHelper::WriteOutputs(long dt)
+void IOHelper::WriteSlowOutputs(long dt)
 {
     //Increment LED Cycle; used for "blinking" LED states
     LEDCycle += dt/100;
-    //Set Gates
-    for(int i = 0; i < NUM_GATE_OUTS; i++)
-    {
-        gpio_put(GATE_OUT_PINS[i], OUT_GATES[i]);
-    }
     //Set LEDs
     for(int i = 0; i < NUM_LEDS; i++)
     {
@@ -244,6 +255,14 @@ void IOHelper::WriteOutputs(long dt)
             }
         }
         gpio_put(LED_IO_PINS[i], thisLedState);
+    }
+}
+void IOHelper::WriteFastOutputs(long dt)
+{
+    //Set Gates
+    for(int i = 0; i < NUM_GATE_OUTS; i++)
+    {
+        gpio_put(GATE_OUT_PINS[i], OUT_GATES[i]);
     }
 }
 

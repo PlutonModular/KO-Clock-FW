@@ -13,7 +13,7 @@
 #include "IO/IOHelper.hpp"
 #include "debug.h"
 
-#define CLOCKIN_BUFFER_SIZE 64
+#define CLOCKIN_BUFFER_SIZE 32
 
 #define CLOCKIN_MIN_WAIT 100'000
 #define CLOCKIN_WAIT_MULT 32
