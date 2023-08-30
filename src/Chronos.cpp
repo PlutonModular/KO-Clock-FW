@@ -56,6 +56,25 @@ void Chronos::AddBeatToBPMEstimateLastOnly()
     lastClockTime = currentTimeUS;
 }
 
+void Chronos::CalculateSwing()
+{
+    uint16_t swing = io->IN_SWING_KNOB;
+    if(io->CV_swing > 300) //using swing cv
+    {
+        swing += io->CV_swing;
+        swing = min(swing, (uint16_t)4096);
+        debug("%u\n", swing); //TODO: why the hell doesnt it respond to the CV in when it's literally making the same number go up??
+    }
+    if(swing > 300) //don't burden the processor with this while swing isn't even on
+    {
+        uint32_t barTime = (beatTimeFinal%512)*128; //bar time from 0-65535
+        //this swing formula was calculated experimentally using the following formula on desmos. N = swings per bar, X and Y range from 0-65535
+        //y=x\ +\ \cos\left(\frac{x}{\left(\frac{65535}{2\pi\ \cdot\ n}\right)}\right)\cdot\left(\frac{9300}{n}\right)-\left(\frac{9300}{n}\right)
+        uint32_t swingTime = beatTimeFinal + (cos(barTime / (65535/(2*3.141592*swingsPerBar)))*(9300/swingsPerBar) - (9300/swingsPerBar))/128;
+        beatTimeFinal = lerp((double)beatTimeFinal, (double)swingTime, (double)swing/4096.0);
+    }
+}
+
 void Chronos::FastUpdate(uint32_t deltaMicros)
 {
     if(isFollowMode)
@@ -80,31 +99,24 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
 
         if(isPlayMode)
         {
-        //Advance time
-        timeInThisGradation += deltaMicros;
-        if(timeInThisGradation >= microsPerTimeGradation)
-        {
-            timeInThisGradation -= microsPerTimeGradation;
-            if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
-            else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
-            else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
-        }
+            //Advance time
+            timeInThisGradation += deltaMicros;
+            if(timeInThisGradation >= microsPerTimeGradation)
+            {
+                timeInThisGradation -= microsPerTimeGradation;
+                if      (io->IN_TMULT_SWITCH == 0) beatTime += 1;
+                else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
+                else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
+            }
 
-        //Full quarter note elapsed. snap time to quarter
-        if(clockPulseCounter >= uint16_t(clockPPQN))
-        {
-            clockPulseCounter -= uint16_t(clockPPQN);
-            beatTime = floor(round(beatTime/512.0)*512);
-        }
-
-            //TEMPORARY IMPLEMENTATION FOR TESTING, PROBABLY VERY BAD
-            io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
-            io->OUT_GATES[1] = CalcGate(256, gateLen);
-            io->OUT_GATES[2] = CalcGate(128, gateLen);
-            io->OUT_GATES[3] = CalcGate(64 , gateLen);
-
-            io->OUT_GATES[4] = CalcGate(8 <<(7-io->IN_UD_INDEX), gateLen);
-            io->OUT_GATES[5] = CalcGate(16<<(7-io->IN_UD_INDEX), gateLen);
+            //Full quarter note elapsed. snap time to quarter
+            if(clockPulseCounter >= uint16_t(clockPPQN))
+            {
+                clockPulseCounter -= uint16_t(clockPPQN);
+                beatTime = floor(round(beatTime/512.0)*512);
+            }
+            beatTimeFinal = beatTime; //TODO: ADD OFFSET CV HERE
+            CalculateSwing();
         }
 
 
@@ -138,6 +150,8 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
                 else if (io->IN_TMULT_SWITCH == 1) beatTime += 2;
                 else if (io->IN_TMULT_SWITCH == 2) beatTime += 4;
             }
+            beatTimeFinal = beatTime; //TODO: ADD OFFSET CV HERE
+            CalculateSwing();
         }
 
         //reset on the beat
@@ -145,15 +159,6 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
         {
             beatTime = 0;
         }
-
-        //TEMPORARY IMPLEMENTATION FOR TESTING, PROBABLY VERY BAD
-        io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
-        io->OUT_GATES[1] = CalcGate(256, gateLen);
-        io->OUT_GATES[2] = CalcGate(128, gateLen);
-        io->OUT_GATES[3] = CalcGate(64 , gateLen);
-
-        io->OUT_GATES[4] = CalcGate(8 <<(7-io->IN_UD_INDEX), gateLen);
-        io->OUT_GATES[5] = CalcGate(16<<(7-io->IN_UD_INDEX), gateLen);
 
     }
     else
@@ -166,14 +171,16 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
             externalClockKeepaliveCountdown = max(microsPerTimeGradation * CLOCKIN_WAIT_MULT, CLOCKIN_MIN_WAIT);
         }
         beatTime = 0;
-        io->OUT_GATES[0] = false;
-        io->OUT_GATES[1] = false;
-        io->OUT_GATES[2] = false;
-        io->OUT_GATES[3] = false;
-
-        io->OUT_GATES[4] = false;
-        io->OUT_GATES[5] = false;
     }
+    
+    //TEMPORARY IMPLEMENTATION FOR TESTING, PROBABLY VERY BAD
+    io->OUT_GATES[0] = CalcGate(512, gateLen); //512 512th notes
+    io->OUT_GATES[1] = CalcGate(256, gateLen);
+    io->OUT_GATES[2] = CalcGate(128, gateLen);
+    io->OUT_GATES[3] = CalcGate(64 , gateLen);
+
+    io->OUT_GATES[4] = CalcGate(8 <<(7-io->IN_UD_INDEX), gateLen);
+    io->OUT_GATES[5] = CalcGate(16<<(7-io->IN_UD_INDEX), gateLen);
     last_beatTime = beatTime;
 }
 

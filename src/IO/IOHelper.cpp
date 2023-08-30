@@ -118,8 +118,8 @@ void IOHelper::ReadSlowInputs(long dt)
     CV_UD       = DoHysteresisWrite(CV_UD      , GetCalibratedValue(CV_UD_Raw      , 2300, 340), 30);
     CV_scrub    = DoHysteresisWrite(CV_scrub   , GetCalibratedValue(CV_scrub_Raw   , 2300, 340), 30);
     CV_timeMult = DoHysteresisWrite(CV_timeMult, GetCalibratedValue(CV_timeMult_Raw, 2300, 340), 30);
-    CV_swing    = DoHysteresisWrite(CV_swing   , GetCalibratedValue(CV_swing_Raw   , 2300, 340), 30);
-    
+    CV_swing    = DoHysteresisWrite(CV_swing   , GetCalibratedValue(CV_swing_Raw   , 36,  3010), 30);
+
     if(abs(CV_UD) < 20)       CV_UD = 0;
     if(abs(CV_scrub) < 20)    CV_scrub = 0;
     if(abs(CV_timeMult) < 20) CV_timeMult = 0;

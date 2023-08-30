@@ -9,6 +9,7 @@
 #include <cmath>
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
+#define lerp(a,b,f) ((a) + (f) * ((b) - (a)))
 
 #include "IO/IOHelper.hpp"
 #include "debug.h"
@@ -43,6 +44,9 @@ class Chronos
 		uint32_t beatTime = 0;
 		uint32_t last_beatTime = 0;
 
+		/// @brief The final beat time, to be modified by CalculateSwing()
+		uint32_t beatTimeFinal = 0;
+
 		/// @brief The number of microseconds between incrementations of "time" variable; calculated in SetBPM
 		uint16_t microsPerTimeGradation = 0;
 		/// @brief Used to prevent setting BPM to its current value
@@ -50,6 +54,9 @@ class Chronos
 		
 		/// @brief Microseconds in this time Gradation; when > microsPerTimeGradation, reset and increment beatTime
 		uint16_t timeInThisGradation = 0;
+
+		/// @brief Pretty self explanatory. Number of swing cycles completed per whole note.
+		double swingsPerBar = 4;
 
 
 		//-------- EXT CLOCK IN VARIABLES --------
@@ -83,12 +90,15 @@ class Chronos
 		/// @return whether the gate should be on
 		bool CalcGate(uint32_t thisBeatTime, uint16_t divisor, uint16_t gateLen);
 		
-			/// @brief Calculate whether a gate should be on, according to barTime's current value
+			/// @brief Calculate whether a gate should be on, according to beatTime's current value
 			/// @param divisor number of 512th notes the gate cycle should last
 			/// @param gateLen number between 0 and 1024 indicating the gate length
 			/// @return whether the gate should be on currently
 			bool CalcGate(uint16_t divisor, uint16_t gateLen)
-			{ return CalcGate(beatTime, divisor, gateLen); }
+			{ return CalcGate(beatTimeFinal, divisor, gateLen); }
+			
+		/// @brief Calculates from and applies swing to beatTimeFinal. to be done once per update after setting the value of beatTimeFinal to beatTime
+		void CalculateSwing();
 
 	public:
 		

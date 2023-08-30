@@ -66,7 +66,7 @@ int main(void)
     //start chronos
     alarm_pool *chronos_pool = alarm_pool_create(1, 1);
     audioRateTimer = new repeating_timer_t();
-    alarm_pool_add_repeating_timer_us(chronos_pool, -40, audio_rate_callback, NULL, audioRateTimer); //25kHz (40uS interval)
+    alarm_pool_add_repeating_timer_us(chronos_pool, 40, audio_rate_callback, NULL, audioRateTimer); //25kHz (40uS interval)
     
     io.SetLEDState(PanelLED::PlayButton, LEDState::BLINK_SLOW);
             
