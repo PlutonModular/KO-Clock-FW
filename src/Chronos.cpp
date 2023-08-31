@@ -61,10 +61,13 @@ void Chronos::CalculateSwing()
     uint16_t swing = io->IN_SWING_KNOB;
     if(io->CV_swing > 300) //using swing cv
     {
-        swing += io->CV_swing;
-        swing = min(swing, (uint16_t)4096);
-        debug("%u\n", swing); //TODO: why the hell doesnt it respond to the CV in when it's literally making the same number go up??
+        swing += uint16_t(io->CV_swing); //later clamped to 4096
+        if(swing > 4096)
+        {
+            swing = 4096;
+        }
     }
+    debug("%i\n", io->CV_UD);
     if(swing > 300) //don't burden the processor with this while swing isn't even on
     {
         uint32_t barTime = (beatTimeFinal%512)*128; //bar time from 0-65535
@@ -73,6 +76,8 @@ void Chronos::CalculateSwing()
         uint32_t swingTime = beatTimeFinal + (cos(barTime / (65535/(2*3.141592*swingsPerBar)))*(9300/swingsPerBar) - (9300/swingsPerBar))/128;
         beatTimeFinal = lerp((double)beatTimeFinal, (double)swingTime, (double)swing/4096.0);
     }
+
+    beatTimeFinal += io->CV_scrub;
 }
 
 void Chronos::FastUpdate(uint32_t deltaMicros)
@@ -179,8 +184,8 @@ void Chronos::FastUpdate(uint32_t deltaMicros)
     io->OUT_GATES[2] = CalcGate(128, gateLen);
     io->OUT_GATES[3] = CalcGate(64 , gateLen);
 
-    io->OUT_GATES[4] = CalcGate(8 <<(7-io->IN_UD_INDEX), gateLen);
-    io->OUT_GATES[5] = CalcGate(16<<(7-io->IN_UD_INDEX), gateLen);
+    io->OUT_GATES[4] = CalcGate(8 <<clamp((7-io->IN_UD_INDEX) - io->CV_UD_Mult, 1, 7), gateLen);
+    io->OUT_GATES[5] = CalcGate(16<<clamp((7-io->IN_UD_INDEX) - io->CV_UD_Mult, 1, 7), gateLen);
     last_beatTime = beatTime;
 }
 

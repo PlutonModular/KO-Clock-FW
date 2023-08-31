@@ -116,14 +116,16 @@ void IOHelper::ReadSlowInputs(long dt)
     CV_swing_Raw /= 8;
 
     CV_UD       = DoHysteresisWrite(CV_UD      , GetCalibratedValue(CV_UD_Raw      , 2300, 340), 30);
-    CV_scrub    = DoHysteresisWrite(CV_scrub   , GetCalibratedValue(CV_scrub_Raw   , 2300, 340), 30);
+    CV_scrub    = DoHysteresisWrite(CV_scrub   , GetCalibratedValue(CV_scrub_Raw   , 2300, 340), 60);
     CV_timeMult = DoHysteresisWrite(CV_timeMult, GetCalibratedValue(CV_timeMult_Raw, 2300, 340), 30);
-    CV_swing    = DoHysteresisWrite(CV_swing   , GetCalibratedValue(CV_swing_Raw   , 36,  3010), 30);
+    CV_swing    = DoHysteresisWrite(CV_swing   , max(min(CV_swing_Raw, 4096), 36)-36, 30); //TODO: make this work with getCalibratedValue
 
     if(abs(CV_UD) < 20)       CV_UD = 0;
-    if(abs(CV_scrub) < 20)    CV_scrub = 0;
+    if(abs(CV_scrub) < 40)    CV_scrub = 0;
     if(abs(CV_timeMult) < 20) CV_timeMult = 0;
     if(abs(CV_swing) < 20)    CV_swing = 0;
+
+    CV_UD_Mult = (CV_UD/800.0);
 
     //Set UD index (only if not grounded; if grounded, UD selector is between positions)
     if(IN_UD_KNOB > 128)
@@ -178,7 +180,7 @@ int16_t IOHelper::ReadADC(uint8_t addr)
         //printf("TEST %u\t%d\n", i, (addr & (0b00000001 << i)) > 0);
     }
     //allow MUX and ADC to settle
-    sleep_us(50);
+    sleep_us(100);
     uint16_t adcVal = adc_read();
     return adcVal;
 }

@@ -10,6 +10,7 @@
 #include <cmath>
 #include "pico/stdlib.h"
 #include "hardware/adc.h"
+#include "MacroMath.h"
 
 #define NUM_GATE_OUTS 6
 #define NUM_LEDS 3
@@ -134,6 +135,9 @@ class IOHelper
         int16_t CV_timeMult     = 0;
         /// @brief Swing CV Value.
         int16_t CV_swing        = 0;
+
+        /// @brief User Division modifier
+        int16_t CV_UD_Mult          = 0;
 
 
         //-------- Panel Knobs --------

@@ -7,12 +7,10 @@
 #pragma once
 
 #include <cmath>
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
-#define lerp(a,b,f) ((a) + (f) * ((b) - (a)))
 
 #include "IO/IOHelper.hpp"
 #include "debug.h"
+#include "MacroMath.h"
 
 #define CLOCKIN_BUFFER_SIZE 32
 
